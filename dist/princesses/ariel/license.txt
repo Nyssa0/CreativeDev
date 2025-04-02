@@ -1,0 +1,11 @@
+Model Information:
+* title:	Ariel Combat Idle 01
+* source:	https://sketchfab.com/3d-models/ariel-combat-idle-01-7fc0d6658dbc4d4a850c568d915295f7
+* author:	James Lashmar (https://sketchfab.com/iamneuron)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Ariel Combat Idle 01" (https://sketchfab.com/3d-models/ariel-combat-idle-01-7fc0d6658dbc4d4a850c568d915295f7) by James Lashmar (https://sketchfab.com/iamneuron) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

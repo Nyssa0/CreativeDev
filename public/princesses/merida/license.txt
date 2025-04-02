@@ -1,0 +1,11 @@
+Model Information:
+* title:	Merida 3D Model
+* source:	https://sketchfab.com/3d-models/merida-3d-model-f4448df4aec04f5997fd5e6a87e771c5
+* author:	spongebob.evolution (https://sketchfab.com/spongebob.evolution)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Merida 3D Model" (https://sketchfab.com/3d-models/merida-3d-model-f4448df4aec04f5997fd5e6a87e771c5) by spongebob.evolution (https://sketchfab.com/spongebob.evolution) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
