@@ -54,70 +54,106 @@ function main() {
     controls.target.set(0, 15, 0);
     controls.update();
 
-    // Ajouter une GUI pour la position de la caméra
     const cameraFolder = gui.addFolder('Camera Position');
     cameraFolder.add(camera.position, 'x', -100, 100, 0.1).name('Pos X').listen();
     cameraFolder.add(camera.position, 'y', -100, 100, 0.1).name('Pos Y').listen();
     cameraFolder.add(camera.position, 'z', -100, 100, 0.1).name('Pos Z').listen();
 
-    // Ajouter une GUI pour le point de regard (controls.target)
     const targetFolder = gui.addFolder('Camera Target');
     targetFolder.add(controls.target, 'x', -100, 100, 0.1).name('Target X').listen();
     targetFolder.add(controls.target, 'y', -100, 100, 0.1).name('Target Y').listen();
     targetFolder.add(controls.target, 'z', -100, 100, 0.1).name('Target Z').listen();
 
-
-
     const scene = new THREE.Scene();
+
+    const video = document.createElement('video');
+    video.src = '/background.mov';
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch(error => {
+        console.error("Erreur lors de la lecture de la vidéo:", error);
+    });
+
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBFormat;
+
+    scene.background = videoTexture;
 
     const princessModels = [];
 
-    {
-        const color = 0xFFFFFF;
-        const intensity = 10;
-        const light = new THREE.DirectionalLight( color, intensity );
-        light.position.set( 0, 2, 4 );
-        scene.add( light );
-    }
+    const cameraPositions = [
+        { position: new THREE.Vector3(0, 20, -10), lookAt: new THREE.Vector3(0, 15, -5), name: "Initial View" },
+        { position: new THREE.Vector3(12.9, 6, -5.5), lookAt: new THREE.Vector3(-15, 7, 8), name: "Porcelain_Room" },
+        { position: new THREE.Vector3(7.5, 6, 0), lookAt: new THREE.Vector3(20, 7, 10), name: "Billiard_Room" },
+        { position: new THREE.Vector3(10, 6, 9.3), lookAt: new THREE.Vector3(-8, 7, 30), name: "Armoury" },
+        { position: new THREE.Vector3(10.5, 6, 15.3), lookAt: new THREE.Vector3(0, 7, 50), name: "Smoking_Room" },
+        { position: new THREE.Vector3(6.5, 6, 20.5), lookAt: new THREE.Vector3(-30, 7, 10), name: "Great_Drawing_Room" },
+        { position: new THREE.Vector3(-7.2, 6, 21.5), lookAt: new THREE.Vector3(-10, 7, 10), name: "Small_Drawing_Room" },
+        { position: new THREE.Vector3(-6.1, 6, 15.2), lookAt: new THREE.Vector3(-7, 7, 5), name: "Upper_Vestibule" },
+        { position: new THREE.Vector3(-6.1, 6, 7.6), lookAt: new THREE.Vector3(-8, 7, 5), name: "Dining_Room" },
+        { position: new THREE.Vector3(-10, 6, -4.2), lookAt: new THREE.Vector3(0, 7, -10), name: "Serving_Room" },
+    ];
 
     const loader = new GLTFLoader();
 
+    let currentRoomIndex = -1;
+    let clickCounter = 0;
+    let isEasterEggTriggered = false;
+    let postEasterEggIndex = 0;
+    let easterEggModel = null;
+
+    function updatePrincessDescriptionVisibility() {
+        const princessDescription = document.querySelector('.princess__description');
+        const activeDescription = document.querySelector('.description__container.active');
+
+        if (!activeDescription || currentRoomIndex === -1 || isEasterEggTriggered) {
+            princessDescription.style.display = 'none';
+        } else {
+            princessDescription.style.display = 'block';
+        }
+    }
+
     loader.load('/museum/scene.gltf', (gltf) => {
         scene.add(gltf.scene);
-        console.log('Modèle chargé:', gltf.scene);
 
         const castlePosition = new THREE.Vector3(0, 15, -5);
         camera.lookAt(castlePosition);
         controls.target.copy(castlePosition);
         controls.update();
 
-        scene.traverse((child) => {
-            console.log(child.name);
-        });
-
         function loadModelInRoom(scene, roomName, modelPath, positionOffset, scale) {
             const room = scene.getObjectByName(roomName);
             if (room) {
-                console.log(`Pièce trouvée : ${roomName}`, room);
                 const position = new THREE.Vector3(
                     room.position.x + positionOffset.x,
                     room.position.y + positionOffset.y,
                     room.position.z + positionOffset.z
                 );
-                loadModel(modelPath, position, scale, roomName);
+                const cameraPos = cameraPositions.find(camPos => camPos.name === roomName);
+                if (cameraPos) {
+                    loadModel(modelPath, position, scale, roomName, cameraPos.position);
+                } else {
+                    console.warn(`Position de caméra non trouvée pour ${roomName}, pas de lumière ajoutée.`);
+                    loadModel(modelPath, position, scale, roomName, position);
+                }
             }
             return room;
         }
 
         const roomsToLoad = [
             { name: "Porcelain_Room", modelPath: '/princesses/rapunzel/scene.gltf', positionOffset: { x: 3, y: 2.1, z: -8 }, scale: { x: 1.5, y: 1.5, z: 1.5 } },
-            // { name: "Dining_Room", modelPath: '/princesses/ariel/scene.gltf', positionOffset: { x: -3, y: 6, z: 0 }, scale: { x: 0.01, y: 0.01, z: 0.01 } },
             { name: "Billiard_Room", modelPath: '/princesses/elsa/scene.gltf', positionOffset: { x: 4, y: 6, z: 2 }, scale: { x: 0.15, y: 0.15, z: 0.15 } },
             { name: "Armoury", modelPath: '/princesses/alice/scene.gltf', positionOffset: { x: 3, y: 10.5, z: 10 }, scale: { x: 0.15, y: 0.15, z: 0.15 } },
             { name: "Smoking_Room", modelPath: '/princesses/belle/scene.gltf', positionOffset: { x: 4, y: 14.2, z: 15 }, scale: { x: 0.01, y: 0.01, z: 0.01 } },
             { name: "Great_Drawing_Room", modelPath: '/princesses/ariel/scene.gltf', positionOffset: { x: 2, y: 14.2, z: 15 }, scale: { x: 0.01, y: 0.01, z: 0.01 } },
             { name: "Small_Drawing_Room", modelPath: '/princesses/mulan/scene.gltf', positionOffset: { x: -3, y: 14.2, z: 15 }, scale: { x: 0.17, y: 0.17, z: 0.17 } },
-            { name: "Upper_Vestibule", modelPath: '/princesses/merida/scene.gltf', positionOffset: { x: -1.6, y: 10.2, z: 6 }, scale: { x: 0.17, y: 0.17, z: 0.17 } },
+            { name: "Upper_Vestibule", modelPath: '/princesses/merida/scene.gltf', positionOffset: { x: -1.7, y: 10.2, z: 7 }, scale: { x: 0.17, y: 0.17, z: 0.17 } },
+            { name: "Dining_Room", modelPath: '/princesses/cinderella/scene.gltf', positionOffset: { x: -2.5, y: 5.5, z: -1 }, scale: { x: 0.09, y: 0.09, z: 0.09 } },
+            { name: "Serving_Room", modelPath: '/princesses/anna/scene.gltf', positionOffset: { x: -2, y: 1.85, z: -9 }, scale: { x: 1.1, y: 1.1, z: 1.1 } },
         ];
 
         const loadedRooms = roomsToLoad.map(roomConfig =>
@@ -130,6 +166,21 @@ function main() {
             )
         );
 
+        let easterEggModel = null;
+
+        const easterEggPosition = new THREE.Vector3(9, -1, -12);
+        const easterEggScale = new THREE.Vector3(1, 1, 1);
+        loader.load('/karmine_corp.glb', (gltf) => {
+            gltf.scene.position.copy(easterEggPosition);
+            gltf.scene.scale.set(easterEggScale.x, easterEggScale.y, easterEggScale.z);
+            gltf.scene.visible = false;
+            scene.add(gltf.scene);
+            easterEggModel = gltf.scene;
+        }, undefined, function (error) {
+            console.error("Erreur de chargement de l'easter egg:", error);
+        });
+
+
         const missingRooms = roomsToLoad
             .filter((_, index) => !loadedRooms[index])
             .map(roomConfig => roomConfig.name);
@@ -137,37 +188,189 @@ function main() {
             console.warn("⚠️ Pièces non trouvées, vérifie les noms dans console.log :", missingRooms);
         }
 
-        // Générer les positions des caméras en fonction des pièces
-        const cameraPositions = [
-            { position: new THREE.Vector3(0, 20, -10), lookAt: new THREE.Vector3(0, 15, -5), name: "Initial View" },
-            { position: new THREE.Vector3(12.9, 6, -5.5), lookAt: new THREE.Vector3(-15, 7, 8), name: "Porcelain_Room" },
-            { position: new THREE.Vector3(7.5, 6, 0), lookAt: new THREE.Vector3(20, 7, 10), name: "Billiard_Room" },
-            { position: new THREE.Vector3(10, 6, 9.3), lookAt: new THREE.Vector3(-8, 7, 30), name: "Armoury" },
-            { position: new THREE.Vector3(10.5, 6, 15.3), lookAt: new THREE.Vector3(0, 7, 50), name: "Smoking_Room" },
-            { position: new THREE.Vector3(6.5, 6, 20.5), lookAt: new THREE.Vector3(-30, 7, 10), name: "Great_Drawing_Room" },
-            { position: new THREE.Vector3(-7.2, 6, 21.5), lookAt: new THREE.Vector3(-10, 7, 10), name: "Small_Drawing_Room" },
-            { position: new THREE.Vector3(-6.1, 6, 15.2), lookAt: new THREE.Vector3(-7, 7, 5), name: "Upper_Vestibule" },
-        ];
-
         const buttonContainer = document.querySelector('.camera__menu');
         if (!buttonContainer) {
             console.error("Conteneur .camera__menu non trouvé dans le DOM");
             return;
         }
 
-        cameraPositions.forEach((camPos) => {
-            const button = document.createElement('button');
-            button.textContent = camPos.name.replaceAll('_', ' ');
-            buttonContainer.appendChild(button);
+        const roomPositions = cameraPositions.filter(camPos => camPos.name !== "Initial View");
 
-            button.addEventListener('click', () => {
-                moveCameraToPosition(camPos.position, camPos.lookAt, camPos.name);
-            });
+        const postEasterEggPositions = [
+            { position: new THREE.Vector3(-9.7, 6, 11.5), lookAt: new THREE.Vector3(-5, 0, 11.5) },
+            { position: new THREE.Vector3(-4.5, 1.6, 11.5), lookAt: new THREE.Vector3(-5, 0, 0) },
+        ];
+
+        const initialViewButton = document.createElement('button');
+        initialViewButton.textContent = 'Initial View';
+        buttonContainer.appendChild(initialViewButton);
+
+        initialViewButton.addEventListener('click', () => {
+            const initialView = cameraPositions.find(camPos => camPos.name === "Initial View");
+            if (initialView) {
+                moveCameraToPosition(initialView.position, initialView.lookAt, initialView.name);
+                currentRoomIndex = -1;
+                clickCounter = 0;
+                isEasterEggTriggered = false;
+                postEasterEggIndex = 0;
+
+                if (easterEggModel) {
+                    easterEggModel.visible = false;
+                }
+
+                updatePrincessDescriptionVisibility();
+            }
+
+
         });
+
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '← Précédent';
+        buttonContainer.appendChild(prevButton);
+
+        prevButton.addEventListener('click', () => {
+            if (currentRoomIndex > 0) {
+                currentRoomIndex--;
+                const camPos = roomPositions[currentRoomIndex];
+                moveCameraToPosition(camPos.position, camPos.lookAt, camPos.name);
+                clickCounter = 0;
+                if (easterEggModel) {
+                    easterEggModel.visible = false;
+                }
+            } else if (currentRoomIndex === 0) {
+                const initialView = cameraPositions.find(camPos => camPos.name === "Initial View");
+                if (initialView) {
+                    moveCameraToPosition(initialView.position, initialView.lookAt, initialView.name);
+                    currentRoomIndex = -1;
+                    clickCounter = 0;
+                    isEasterEggTriggered = false;
+                    postEasterEggIndex = 0;
+                    if (easterEggModel) {
+                        easterEggModel.visible = false;
+                    }
+                }
+            }
+
+            updatePrincessDescriptionVisibility();
+        });
+
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Suivant →';
+        buttonContainer.appendChild(nextButton);
+
+        nextButton.addEventListener('click', () => {
+            if (!isEasterEggTriggered) {
+
+                if (currentRoomIndex < roomPositions.length - 1) {
+                    currentRoomIndex++;
+                    const camPos = roomPositions[currentRoomIndex];
+                    moveCameraToPosition(camPos.position, camPos.lookAt, camPos.name);
+                    clickCounter = 0;
+                } else if (currentRoomIndex === roomPositions.length - 1) {
+                    clickCounter++;
+                    if (clickCounter >= 3) {
+                        easterEgg();
+                        clickCounter = 0;
+                        isEasterEggTriggered = true;
+                        updatePrincessDescriptionVisibility();
+                    } else {
+                        console.log(`Encore ${3 - clickCounter} clics pour déclencher l'easter egg.`);
+                    }
+                }
+            } else {
+
+                if (postEasterEggIndex < postEasterEggPositions.length) {
+
+                    controls.enabled = false;
+                    const target = postEasterEggPositions[postEasterEggIndex];
+                    const tweenPosition = new TWEEN.Tween(camera.position)
+                        .to(target.position, 2000)
+                        .easing(TWEEN.Easing.Quadratic.InOut)
+                        .onUpdate(() => {
+                            camera.lookAt(target.lookAt);
+                            controls.target.copy(target.lookAt);
+                            controls.update();
+                        })
+                        .onComplete(() => {
+                            controls.enabled = true;
+                            postEasterEggIndex++;
+                            if (postEasterEggIndex >= postEasterEggPositions.length) {
+                                if (easterEggModel) {
+                                    easterEggModel.visible = true;
+                                }
+                                currentRoomIndex = -1;
+                                isEasterEggTriggered = false;
+                                postEasterEggIndex = 0;
+                            }
+                            updatePrincessDescriptionVisibility();
+                        });
+
+                    const tweenTarget = new TWEEN.Tween(controls.target)
+                        .to(target.lookAt, 2000)
+                        .easing(TWEEN.Easing.Quadratic.InOut)
+                        .onComplete(() => {
+                            controls.update();
+                        });
+
+                    tweenPosition.start();
+                    tweenTarget.start();
+                }
+            }
+
+            // updatePrincessDescriptionVisibility();
+
+        });
+        updatePrincessDescriptionVisibility();
 
     },undefined, function ( error ) {
         console.error("Erreur de chargement du modèle:", error);
     });
+
+    function easterEgg() {
+        controls.enabled = false;
+        const easterEggPositions = [
+            { position: new THREE.Vector3(0, 30, 20), lookAt: new THREE.Vector3(0, 0, 0) },
+            { position: new THREE.Vector3(20, 10, 0), lookAt: new THREE.Vector3(0, 10, 0) },
+            { position: new THREE.Vector3(0, 10, -20), lookAt: new THREE.Vector3(0, 10, 0) },
+            { position: new THREE.Vector3(-20, 10, 0), lookAt: new THREE.Vector3(0, 10, 0) },
+            { position: new THREE.Vector3(-9.7, 15, 11.5), lookAt: new THREE.Vector3(-5, 0, 11.5) }
+        ];
+
+        function animateToPosition(index) {
+            if (index >= easterEggPositions.length) {
+                controls.enabled = true;
+                updatePrincessDescriptionVisibility();
+                return;
+            }
+
+            const target = easterEggPositions[index];
+            const tweenPosition = new TWEEN.Tween(camera.position)
+                .to(target.position, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(() => {
+                    camera.lookAt(target.lookAt);
+                    controls.target.copy(target.lookAt);
+                    controls.update();
+                })
+                .onComplete(() => {
+                    animateToPosition(index + 1);
+                });
+
+            const tweenTarget = new TWEEN.Tween(controls.target)
+                .to(target.lookAt, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onComplete(() => {
+                    controls.update();
+                });
+
+            tweenPosition.start();
+            tweenTarget.start();
+        }
+        animateToPosition(0);
+    }
+
+
+
 
     function moveCameraToPosition(position, lookAt, name) {
         new TWEEN.Tween(camera.position)
@@ -178,9 +381,7 @@ function main() {
                 if (controls) controls.update();
             })
             .onComplete(() => {
-                // Activer ou désactiver les contrôles en fonction du nom
                 if (name === "Initial View") {
-                    console.log('test')
                     controls.enablePan = true;
                     controls.enableZoom = true;
                     controls.enableRotate = true;
@@ -192,13 +393,15 @@ function main() {
 
                 const descriptionContainer = document.querySelector('.princess__description');
                 const descriptionElements = descriptionContainer.querySelectorAll('.description__container');
-                descriptionElements.forEach(p => p.classList.remove('active')); // Masquer toutes les descriptions
+                descriptionElements.forEach(p => p.classList.remove('active'));
                 const activeDescription = descriptionContainer.querySelector(`.description__container[data-room="${name}"]`);
                 if (activeDescription) {
-                    activeDescription.classList.add('active'); // Afficher la description correspondante
+                    activeDescription.classList.add('active');
                 } else {
                     console.warn(`Aucune description trouvée pour la pièce : ${name}`);
                 }
+
+                updatePrincessDescriptionVisibility();
             })
             .start();
 
@@ -211,15 +414,22 @@ function main() {
                 })
                 .start();
         }
+
+        updatePrincessDescriptionVisibility();
     }
 
-    function loadModel(url, position, scale, roomName) {
+    function loadModel(url, position, scale, roomName, cameraPosition) {
         loader.load(url, (gltf) => {
             gltf.scene.position.copy(position);
             gltf.scene.scale.set(scale.x, scale.y, scale.z);
             scene.add(gltf.scene);
             princessModels.push({ model: gltf.scene, name: roomName });
-            console.log(`Modèle chargé à la position:`, position);
+
+            const light = new THREE.PointLight(0xffffff, 30, 10);
+            light.position.copy(cameraPosition);
+            light.castShadow = true;
+            scene.add(light);
+
         }, undefined, function (error) {
             console.error(`Erreur de chargement du modèle ${url}:`, error);
         });
@@ -244,7 +454,7 @@ function main() {
         }
         TWEEN.update();
         princessModels.forEach(princess => {
-            princess.model.rotation.y += 0.01; // Vitesse de rotation (ajuste selon tes besoins)
+            princess.model.rotation.y += 0.01;
         });
         renderer.render( scene, camera );
         requestAnimationFrame( render );
