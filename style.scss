@@ -1,6 +1,7 @@
 body {
 	position: relative;
 	margin: 0;
+	height: 100vh;
 }
 
 #c {
@@ -77,20 +78,6 @@ body {
 	}
 }
 
-//.princess__description {
-//	position: absolute;
-//	bottom: 20px;
-//	left: 20px;
-//	background-color: rgba(0, 0, 0, 0.7);
-//	color: white;
-//	padding: 10px;
-//	border-radius: 5px;
-//	max-width: 300px;
-//	font-family: Arial, sans-serif;
-//	font-size: 14px;
-//	z-index: 1000;
-//}
-
 .princess__description {
 	position: absolute;
 	top: 20px;
@@ -107,15 +94,7 @@ body {
 	color: #4b0082;
 	text-align: center;
 	display: none;
-	
-	//&.hidden {
-	//	display: none !important;
-	//}
 }
-
-//.princess__description:has(.description__container.active) {
-//	display: block;
-//}
 
 .princess__description .description__container {
 	margin: 0;

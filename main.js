@@ -3,6 +3,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls";
 import TWEEN from "three/addons/libs/tween.module";
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 
 function main() {
@@ -16,6 +19,22 @@ function main() {
     const far = 1000;
     const camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
     camera.position.set( 0, 20, -10 );
+
+    const scene = new THREE.Scene();
+
+    renderer.shadowMap.enabled = true;
+
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.7,
+        0.4,
+        0.85
+    );
+    composer.addPass(bloomPass);
 
     class MinMaxGUIHelper {
         constructor(obj, minProp, maxProp, minDif) {
@@ -64,7 +83,6 @@ function main() {
     targetFolder.add(controls.target, 'y', -100, 100, 0.1).name('Target Y').listen();
     targetFolder.add(controls.target, 'z', -100, 100, 0.1).name('Target Z').listen();
 
-    const scene = new THREE.Scene();
 
     const video = document.createElement('video');
     video.src = '/background.mov';
@@ -124,6 +142,32 @@ function main() {
         camera.lookAt(castlePosition);
         controls.target.copy(castlePosition);
         controls.update();
+
+        const textureLoader = new THREE.TextureLoader();
+        const wallTexture = textureLoader.load('/brick.gltf/textures/brick_pavement_02_arm_4k.jpg');
+        const wallNormal = textureLoader.load('/brick.gltf/textures/brick_pavement_02_nor_gl_4k.jpg');
+        const wallBump = textureLoader.load('/brick.gltf/textures/brick_pavement_02_diff_4k.jpg');
+        const wallDisplacement = textureLoader.load('/brick.gltf/textures/brick_pavement_02_diff_4k.jpg');
+
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            map: wallTexture,
+            color: 0x0000FF,
+            normalMap: wallNormal,
+            bumpMap: wallBump,
+            bumpScale: 0.1,
+            displacementMap: wallDisplacement,
+            displacementScale: 0.2,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+
+        const wallGeometry = new THREE.PlaneGeometry(5, 5, 16, 16);
+        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+        wall.position.set(-5, 5, 10);
+        wall.rotation.y = Math.PI;
+        wall.receiveShadow = true;
+        wall.castShadow = true;
+        scene.add(wall);
 
         function loadModelInRoom(scene, roomName, modelPath, positionOffset, scale) {
             const room = scene.getObjectByName(roomName);
@@ -316,9 +360,6 @@ function main() {
                     tweenTarget.start();
                 }
             }
-
-            // updatePrincessDescriptionVisibility();
-
         });
         updatePrincessDescriptionVisibility();
 
